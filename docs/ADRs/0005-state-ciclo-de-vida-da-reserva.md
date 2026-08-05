@@ -97,13 +97,13 @@ class BookingState(ABC):
     @abstractmethod
     def status(self) -> BookingStatus: ...
 
-    def approve(self, booking: Booking, actor: Actor) -> None:
+    def approve(self, booking: Booking, actor: Actor, now: datetime) -> None:
         raise InvalidStateTransition(self.status(), "approve")
 
-    def reject(self, booking: Booking, actor: Actor, reason: str) -> None:
+    def reject(self, booking: Booking, actor: Actor, reason: str, now: datetime) -> None:
         raise InvalidStateTransition(self.status(), "reject")
 
-    def cancel(self, booking: Booking, actor: Actor) -> None:
+    def cancel(self, booking: Booking, actor: Actor, now: datetime) -> None:
         raise InvalidStateTransition(self.status(), "cancel")
 ```
 
@@ -114,11 +114,18 @@ transição, o sistema recusa, em vez de permitir indevidamente.
 
 Quatro implementações: `PendingState`, `ApprovedState`, `RejectedState` e `CancelledState`.
 
+**O instante da decisão entra por parâmetro.** Toda transição bem-sucedida registra `decided_by` e
+`decided_at`, e o `now` chega de fora em vez de sair de um `datetime.now()` interno. É o mesmo
+mecanismo do `PolicyContext.now` no [ADR-0004](0004-strategy-politicas-de-reserva.md) e a mesma
+razão do [ADR-0009](0009-estrategia-de-testes.md): relógio é I/O disfarçado, e um teste que o lê se
+comporta diferente conforme a hora em que roda. Quem preenche o `now` é a borda HTTP
+([ESPECIFICACAO §8](../ESPECIFICACAO.md#8-estrutura-de-código)); nenhuma camada interna lê relógio.
+
 `Booking` delega — não decide:
 
 ```python
-def approve(self, actor: Actor) -> None:
-    self._state.approve(self, actor)
+def approve(self, actor: Actor, now: datetime) -> None:
+    self._state.approve(self, actor, now)
 ```
 
 O `status` persistido continua sendo um `BookingStatus` simples ([ADR-0003](0003-persistencia-sqlite-repository.md));

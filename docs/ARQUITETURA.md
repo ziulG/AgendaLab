@@ -321,17 +321,17 @@ classDiagram
         +requester_id str
         +slot TimeSlot
         +status BookingStatus
-        +approve(actor) None
-        +reject(actor, reason) None
-        +cancel(actor) None
+        +approve(actor, now) None
+        +reject(actor, reason, now) None
+        +cancel(actor, now) None
     }
 
     class BookingState {
         <<interface>>
         +status() BookingStatus
-        +approve(booking, actor) None
-        +reject(booking, actor, reason) None
-        +cancel(booking, actor) None
+        +approve(booking, actor, now) None
+        +reject(booking, actor, reason, now) None
+        +cancel(booking, actor, now) None
     }
 
     class PendingState {
