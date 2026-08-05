@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Valida todos os diagramas Mermaid embutidos na documentação do projeto.
 
-Extrai cada bloco ```mermaid dos arquivos Markdown de docs/ e submete cada um ao
+Extrai cada bloco ```mermaid dos arquivos Markdown do repositório e submete cada um ao
 mermaid-cli. Um diagrama com erro de sintaxe aparece no GitHub como um bloco quebrado,
 e este script existe para que isso seja detectado antes do commit, e não pelo avaliador.
 
@@ -45,6 +45,9 @@ def validar(codigo: str, destino: Path) -> tuple[bool, str]:
 
 def main() -> int:
     markdowns = sorted(DOCS.rglob("*.md"))
+    raiz_readme = RAIZ / "README.md"
+    if raiz_readme.exists():
+        markdowns.insert(0, raiz_readme)
     if not markdowns:
         print(f"Nenhum arquivo Markdown encontrado em {DOCS}")
         return 1
