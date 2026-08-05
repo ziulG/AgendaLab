@@ -163,7 +163,7 @@ no domínio, e não vaza para o esquema.
 |---|---|---|
 | **Estado novo esquecido no mapper**, quebrando o carregamento em tempo de execução | Média | Teste que percorre todos os membros de `BookingStatus` e afirma que cada um tem estado correspondente na conversão. |
 | **Transições divergindo da especificação** ao longo da implementação | Média | `tests/unit/states/test_transitions.py` percorre o produto cartesiano de 4 estados × 3 operações — as 12 células da tabela — e afirma o resultado de cada uma. A tabela do Contexto vira teste, célula por célula. |
-| **Estados acumulando responsabilidade alheia** (persistência, notificação) e virando classes gordas | Baixa | Os estados só transicionam e definem invariantes. A publicação de eventos é do `Booking` ([ADR-0006](0006-observer-notificacoes.md)); a persistência é do repositório. |
+| **Estados acumulando responsabilidade alheia** (persistência, notificação) e virando classes gordas | Baixa | Os estados só transicionam e definem invariantes. A publicação de eventos é do caso de uso, depois que a transição volta ([ADR-0006](0006-observer-notificacoes.md)); a persistência é do repositório. |
 
 ## Conformidade
 
