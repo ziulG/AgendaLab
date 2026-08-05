@@ -2,8 +2,12 @@
 
 **Sistema de reserva de salas e laboratórios universitários.**
 
-Projeto final da disciplina **Arquitetura de Software** — Prof. MSc. Lucas Reis
-Luiz Cutrim · Ciência da Computação · Universidade Federal do Maranhão (UFMA)
+| | |
+|---|---|
+| **Disciplina** | Arquitetura de Software — Prof. MSc. Lucas Reis |
+| **Autor** | Luiz Cutrim |
+| **Curso** | Ciência da Computação — Universidade Federal do Maranhão (UFMA) |
+| **Entrega** | 11/08/2026 |
 
 ---
 
