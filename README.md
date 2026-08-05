@@ -150,7 +150,7 @@ Estas não são falhas descobertas depois — são fronteiras desenhadas e regis
 │   ├── ARQUITETURA.md       10 diagramas Mermaid (C4 e UML)
 │   ├── GLOSSARIO.md         linguagem ubíqua PT-BR ↔ código
 │   ├── DEFESA.md            documento de defesa — Opção B
-│   ├── tasks/               roadmap da implementação
+│   ├── ROADMAP.md           sequenciamento da implementação em 13 etapas
 │   ├── imagens/             capturas de tela da defesa
 │   └── Projeto_final.pdf    enunciado da disciplina
 ├── scripts/
