@@ -9,7 +9,7 @@
 | **Autor** | Luiz Cutrim |
 | **Curso** | Ciência da Computação |
 | **Instituição** | Universidade Federal do Maranhão — UFMA |
-| **Repositório** | `> A PREENCHER: URL do repositório no GitHub` |
+| **Repositório** | https://github.com/ziulG/AgendaLab |
 | **Data de entrega** | 11/08/2026 |
 
 > Este documento corresponde à **Opção B** do material explicativo previsto no enunciado: documento
@@ -62,8 +62,8 @@ O escopo é deliberadamente estreito — sete casos de uso, listados em
 > O conteúdo abaixo é a estrutura prevista e será confirmado antes da entrega.
 
 ```bash
-git clone <URL do repositório>
-cd FinalProjectAS
+git clone https://github.com/ziulG/AgendaLab.git
+cd AgendaLab
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 uvicorn agendalab.presentation.main:app --reload
@@ -417,7 +417,7 @@ Visão das dependências entre as decisões: [índice dos ADRs](ADRs/README.md#c
 
 ## Checklist de preenchimento antes da entrega
 
-- [ ] URL do repositório na capa
+- [x] URL do repositório na capa
 - [ ] §2 — comandos verificados de ponta a ponta, com saída real
 - [ ] §5, §6, §7 — trechos de código reais, com caminho de arquivo e linha
 - [ ] §5, §6, §8 — saída dos testes de políticas, estados e arquitetura

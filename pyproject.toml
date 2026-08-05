@@ -30,7 +30,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/ziulG/FinalProjectAS"
+Repository = "https://github.com/ziulG/AgendaLab"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agendalab"]
