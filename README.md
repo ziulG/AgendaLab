@@ -24,8 +24,8 @@ estreito de propósito, e o que ficou de fora está registrado em ADR, não esqu
 ## Estado do projeto
 
 > **Fase atual: base arquitetural concluída.** A documentação, os ADRs e os diagramas estão prontos.
-> A implementação começa em seguida, fatiada em tasks. Consulte [`docs/tasks/`](docs/tasks/README.md)
-> para o roadmap.
+> A implementação começa em seguida, dividida em 13 etapas. O sequenciamento e o cronograma estão em
+> [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 | Entregável | Situação |
 |---|---|
