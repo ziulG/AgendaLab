@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agendalab"
+version = "0.1.0"
+description = "Sistema de reserva de salas e laboratórios universitários — Projeto Final de Arquitetura de Software (UFMA)"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Luiz Cutrim" }]
+license = { text = "MIT" }
+keywords = ["arquitetura-de-software", "clean-architecture", "design-patterns", "fastapi"]
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0.36",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "httpx>=0.28",
+    "ruff>=0.8",
+    "freezegun>=1.5",
+]
+
+[project.urls]
+Repository = "https://github.com/ziulG/FinalProjectAS"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agendalab"]
+
+# ---------------------------------------------------------------------------
+# pytest — a estratégia de testes está registrada em docs/ADRs/0009-estrategia-de-testes.md
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --strict-markers --strict-config"
+markers = [
+    "unit: testes de domínio puro, sem I/O",
+    "integration: testes que tocam banco de dados",
+    "e2e: testes que exercitam a API ponta a ponta",
+]
+
+[tool.coverage.run]
+source = ["src/agendalab"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "raise NotImplementedError", "if TYPE_CHECKING:"]
+
+# ---------------------------------------------------------------------------
+# ruff — linting e formatação
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]
+
+# NOTA: a regra de dependência entre camadas (ADR-0001) NÃO é verificada aqui.
+# O `banned-api` do ruff é global e impediria até a infraestrutura de importar a si mesma.
+# A verificação é feita por um teste de arquitetura que analisa os imports via AST:
+# tests/architecture/test_dependency_rule.py — ver ADR-0001, seção Conformidade.
