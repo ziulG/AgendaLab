@@ -20,6 +20,8 @@ tabela.
 | Situação da reserva | `BookingStatus` | Em qual dos quatro estados a reserva se encontra |
 | Solicitante | `requester` / `REQUESTER` | Quem pede o uso do espaço |
 | Gestor | `manager` / `MANAGER` | Quem cadastra espaços e decide sobre solicitações |
+| Ator | `Actor` | Quem age sobre uma reserva: par identificador + papel, lido dos cabeçalhos de identidade |
+| Papel | `Role` | `REQUESTER` ou `MANAGER` — o que o ator tem permissão de fazer (RN-11, RN-12) |
 | Capacidade | `capacity` | Número máximo de ocupantes de um espaço |
 | Participantes | `attendees` | Número de pessoas previstas para uma reserva |
 | Finalidade | `purpose` | Justificativa declarada no pedido de reserva |

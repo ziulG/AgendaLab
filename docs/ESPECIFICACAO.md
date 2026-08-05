@@ -373,6 +373,7 @@ src/agendalab/
 │   ├── events/                 ← padrão Observer
 │   │   ├── booking_events.py   BookingRequested, BookingApproved, ...
 │   │   └── publisher.py        EventPublisher (sujeito) + EventObserver (interface)
+│   ├── actor.py                Actor, Role — quem age sobre uma reserva
 │   ├── repositories.py         SpaceRepository, BookingRepository — INTERFACES
 │   └── errors.py               hierarquia de erros de domínio
 │
