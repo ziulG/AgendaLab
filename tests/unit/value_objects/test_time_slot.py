@@ -94,6 +94,37 @@ def test_duracao_em_horas_fracionadas() -> None:
     assert meia_hora.duration_hours() == 0.5
 
 
+# --- semana ISO --------------------------------------------------------------------------------
+#
+# A RN-08 conta horas "na mesma semana ISO (segunda a domingo) da reserva solicitada", e a consulta
+# semanal do repositório usa a mesma noção. O intervalo sabe em que semana começa.
+
+
+def test_semana_iso_do_inicio_do_intervalo() -> None:
+    """20/08/2026 é uma quinta-feira da semana ISO 34."""
+    assert slot(14, 16).iso_week() == (2026, 34)
+
+
+def test_domingo_e_segunda_caem_em_semanas_diferentes() -> None:
+    """RN-08 — a semana ISO vai de segunda a domingo, e a fronteira é entre os dois."""
+    domingo = TimeSlot(datetime(2026, 8, 23, 22), datetime(2026, 8, 23, 23))
+    segunda = TimeSlot(datetime(2026, 8, 24, 8), datetime(2026, 8, 24, 9))
+    assert domingo.iso_week() == (2026, 34)
+    assert segunda.iso_week() == (2026, 35)
+
+
+def test_a_semana_e_a_do_inicio_mesmo_quando_o_intervalo_atravessa_a_virada() -> None:
+    """Sem ambiguidade para intervalo que cruze a semana: a RN-08 fala em data de início."""
+    virada = TimeSlot(datetime(2026, 8, 23, 23), datetime(2026, 8, 24, 1))
+    assert virada.iso_week() == (2026, 34)
+
+
+def test_a_semana_iso_pode_pertencer_a_outro_ano_civil() -> None:
+    """31/12/2025 é quarta-feira e cai na semana ISO 1 de 2026 — por isso o ano vem junto."""
+    fim_de_ano = TimeSlot(datetime(2025, 12, 31, 10), datetime(2025, 12, 31, 12))
+    assert fim_de_ano.iso_week() == (2026, 1)
+
+
 # --- imutabilidade ---------------------------------------------------------------------------
 
 

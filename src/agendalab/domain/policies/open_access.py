@@ -6,21 +6,15 @@ sem antecedência exigida. A única restrição é de uso justo — 8 horas por 
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from agendalab.domain.entities.booking import BookingStatus
 from agendalab.domain.errors import PolicyViolation
+from agendalab.domain.states.concrete_states import ACTIVE_STATUSES
 
 if TYPE_CHECKING:
     from agendalab.domain.policies.booking_policy import BookingRequest, PolicyContext
-
-ACTIVE_STATUSES = (BookingStatus.PENDING, BookingStatus.APPROVED)
-
-
-def _iso_week(moment: datetime) -> tuple[int, int]:
-    """Ano e número da semana ISO — segunda a domingo, conforme a RN-08."""
-    return moment.isocalendar()[:2]
 
 
 class OpenAccessPolicy:
@@ -36,10 +30,10 @@ class OpenAccessPolicy:
         e acumular horas quebradas em ponto flutuante pode ultrapassar o teto por um fio e recusar
         uma solicitação que a regra aceita. `timedelta` conta microssegundos inteiros.
         """
-        week = _iso_week(request.slot.start_at)
+        week = request.slot.iso_week()
         booked = request.slot.end_at - request.slot.start_at
         for booking in context.requester_week_bookings:
-            if booking.status in ACTIVE_STATUSES and _iso_week(booking.slot.start_at) == week:
+            if booking.status in ACTIVE_STATUSES and booking.slot.iso_week() == week:
                 booked += booking.slot.end_at - booking.slot.start_at
 
         if booked > timedelta(hours=self.WEEKLY_HOUR_CAP):

@@ -40,3 +40,12 @@ class TimeSlot:
 
     def duration_hours(self) -> float:
         return (self.end_at - self.start_at).total_seconds() / SECONDS_PER_HOUR
+
+    def iso_week(self) -> tuple[int, int]:
+        """Ano e número da semana ISO — segunda a domingo — em que o intervalo **começa**.
+
+        O ano vem junto porque a semana ISO não coincide com o ano civil: 31/12/2025 pertence à
+        semana 1 de 2026. Um intervalo que atravesse a virada pertence à semana do início, que é o
+        que a RN-08 diz ao contar "reservas cuja data de início cai na mesma semana".
+        """
+        return self.start_at.isocalendar()[:2]

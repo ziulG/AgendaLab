@@ -412,6 +412,7 @@ src/agendalab/
 tests/
 ├── architecture/
 │   └── test_dependency_rule.py   verifica a regra de dependência por análise de imports
+├── doubles/                       repositórios em memória — duplas de teste, não produção
 ├── unit/                          domínio puro, sem I/O
 ├── integration/                   repositórios contra SQLite
 └── e2e/                           API completa via TestClient

@@ -57,12 +57,18 @@ class RejectedState(BookingState):
     def status(self) -> BookingStatus:
         return BookingStatus.REJECTED
 
+    def occupies_slot(self) -> bool:
+        return False  # RN-01
+
 
 class CancelledState(BookingState):
     """Terminal. O intervalo volta a ficar livre para novas solicitações."""
 
     def status(self) -> BookingStatus:
         return BookingStatus.CANCELLED
+
+    def occupies_slot(self) -> bool:
+        return False  # RN-01
 
 
 # O banco guarda um `BookingStatus` simples; o objeto de estado é reconstruído a partir dele.
@@ -78,3 +84,13 @@ _STATES: dict[BookingStatus, BookingState] = {
 def state_for(status: BookingStatus) -> BookingState:
     """O estado correspondente ao status. Um status sem estado é erro de programação."""
     return _STATES[status]
+
+
+# RN-01 — os status que ocupam o horário do espaço, derivados dos próprios estados.
+#
+# Derivado, e não escrito à mão: quem decide se ocupa é o estado, e este conjunto existe apenas
+# porque uma consulta SQL (task 10) não consegue chamar `occupies_slot()` linha a linha — precisa
+# de um `IN (...)`. Derivando, as duas formas não têm como divergir.
+ACTIVE_STATUSES = frozenset(
+    status for status, state in _STATES.items() if state.occupies_slot()
+)

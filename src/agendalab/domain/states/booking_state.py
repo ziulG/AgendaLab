@@ -39,6 +39,20 @@ class BookingState(ABC):
     def cancel(self, booking: Booking, actor: Actor, now: datetime) -> None:
         raise InvalidStateTransition(self.status(), "cancel")
 
+    def occupies_slot(self) -> bool:
+        """RN-01 — se uma reserva neste estado ocupa o horário do espaço.
+
+        O estado governa mais do que a transição, e é por isso que o ADR-0005 preferiu State a uma
+        tabela declarativa: uma tabela responderia "esta transição é permitida?" mas não expressaria
+        que uma reserva rejeitada não ocupa horário.
+
+        O padrão aqui é `True`, ao contrário das transições — e a inversão é deliberada. Nas
+        transições, esquecer de habilitar resulta em recusa, que é o lado seguro. Aqui o lado seguro
+        é o oposto: um estado novo que esqueça de se declarar bloqueia o horário, em vez de liberar
+        um intervalo que deveria estar ocupado e abrir caminho para reserva dupla.
+        """
+        return True
+
     # --- auxiliares dos estados que permitem transição ---------------------------------------
     #
     # Ficam na base porque são idênticos em todo estado que permite a transição, e duplicá-los é
