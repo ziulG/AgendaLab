@@ -16,12 +16,16 @@ from tests.doubles.in_memory_repositories import (
     InMemoryBookingRepository,
     InMemorySpaceRepository,
 )
+from tests.doubles.tracking_booking_repository import TrackingBookingRepository
 
 CONTRATOS = [
     (SpaceRepository, InMemorySpaceRepository),
     (BookingRepository, InMemoryBookingRepository),
+    # A dupla que registra as chamadas de `update` sobrescreve um método do contrato, e por isso
+    # entra aqui: uma assinatura divergente na sobrescrita passaria despercebida.
+    (BookingRepository, TrackingBookingRepository),
 ]
-IDS = [contrato.__name__ for contrato, _ in CONTRATOS]
+IDS = [dupla.__name__ for _, dupla in CONTRATOS]  # a dupla, não o contrato: há dois do mesmo
 
 
 @pytest.mark.parametrize(("contrato", "dupla"), CONTRATOS, ids=IDS)

@@ -22,7 +22,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from datetime import date, datetime
+    from uuid import UUID
 
+    from agendalab.domain.actor import Actor
     from agendalab.domain.entities.space import SpaceKind
     from agendalab.domain.value_objects.time_slot import TimeSlot
 
@@ -70,4 +72,40 @@ class RequestBookingCommand:
     slot: TimeSlot
     purpose: str
     attendees: int
+    now: datetime
+
+
+# --- decisões sobre uma reserva existente — UC-05, UC-06 e UC-07 ------------------------------
+#
+# Os três carregam a mesma tripla: qual reserva, quem está agindo e quando. O `actor` não é
+# decoração: a RN-12 depende de quem ele é, e a trilha de decisão da §4.1 guarda o `user_id`.
+
+
+@dataclass(frozen=True, slots=True)
+class ApproveBookingCommand:
+    """UC-05."""
+
+    booking_id: UUID
+    actor: Actor
+    now: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class RejectBookingCommand:
+    """UC-06. O `reason` chega como o gestor escreveu — quem recusa texto vazio é a RN-14, no
+    domínio."""
+
+    booking_id: UUID
+    actor: Actor
+    reason: str
+    now: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class CancelBookingCommand:
+    """UC-07. Diferente dos outros dois, o `actor` aqui pode ser um solicitante — e é o domínio
+    que decide se aquele solicitante em particular pode cancelar aquela reserva (RN-12)."""
+
+    booking_id: UUID
+    actor: Actor
     now: datetime
