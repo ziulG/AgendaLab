@@ -207,11 +207,14 @@ do código (RN-16) e a capacidade positiva → o espaço é persistido como ativ
 **Ator:** Solicitante ou Gestor
 **Fluxo principal:** o sistema devolve os espaços cadastrados, com filtro opcional por tipo e por
 situação (ativo/inativo).
+**Variante:** informado um código, o sistema devolve aquele espaço; código inexistente → `404`.
 
 ### UC-03 — Consultar agenda e disponibilidade
 **Ator:** Solicitante ou Gestor
 **Fluxo principal:** informado um espaço e uma data, o sistema devolve as reservas ativas daquele
 dia, permitindo identificar as faixas livres antes de solicitar.
+**Variante:** informado o identificador de uma reserva, o sistema a devolve — é como o solicitante
+acompanha a decisão do gestor. Identificador inexistente → `404`.
 
 ### UC-04 — Solicitar reserva
 **Ator:** Solicitante
@@ -382,7 +385,9 @@ src/agendalab/
 │   └── use_cases/
 │       ├── register_space.py       UC-01
 │       ├── list_spaces.py          UC-02
+│       ├── get_space.py            UC-02 — variante por código
 │       ├── check_availability.py   UC-03
+│       ├── get_booking.py          UC-03 — variante por identificador
 │       ├── request_booking.py      UC-04
 │       ├── approve_booking.py      UC-05
 │       ├── reject_booking.py       UC-06
@@ -395,6 +400,7 @@ src/agendalab/
 │   │   ├── mappers.py          conversão ORM ↔ domínio
 │   │   └── sqlalchemy_repositories.py
 │   └── notifications/
+│       ├── notification.py     evento de domínio → mensagem legível, num lugar só
 │       ├── log_notifier.py     observador que registra em log
 │       └── inbox.py            caixa de entrada consultável em memória
 │
@@ -403,6 +409,7 @@ src/agendalab/
     ├── dependencies.py         injeção de dependências e identidade da requisição
     ├── error_handlers.py       erros de domínio → HTTP (seção 7.2)
     └── api/
+        ├── schemas.py          contratos de requisição e resposta (Pydantic)
         ├── spaces.py
         ├── bookings.py
         └── notifications.py

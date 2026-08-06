@@ -49,7 +49,9 @@ class BookingNotFound(DomainError):
         super().__init__(f"Reserva {booking_id} não encontrada.")
 
 
-# --- conflito com o estado atual do recurso (409) ---------------------------------------------
+# --- conflito com o estado atual do recurso -----------------------------------------------------
+#
+# Repetir a operação mais tarde pode funcionar: o que impede é a situação, não a requisição.
 
 
 class DuplicateSpaceCode(DomainError):
@@ -84,7 +86,10 @@ class InvalidStateTransition(DomainError):
         )
 
 
-# --- requisição bem formada, porém inadmissível (422) -----------------------------------------
+# --- requisição bem formada, porém inadmissível -------------------------------------------------
+#
+# Repetir sem mudar os dados nunca vai funcionar. É o oposto do grupo acima, e a distinção entre os
+# dois é o que a §7.2 usa para escolher o código de status — cálculo que pertence à borda, não aqui.
 
 
 class InactiveSpace(DomainError):
@@ -132,7 +137,7 @@ class MissingRejectionReason(DomainError):
         super().__init__("A rejeição de uma reserva exige um motivo não vazio.")
 
 
-# --- autorização (403) ------------------------------------------------------------------------
+# --- autorização --------------------------------------------------------------------------------
 
 
 class PermissionDenied(DomainError):

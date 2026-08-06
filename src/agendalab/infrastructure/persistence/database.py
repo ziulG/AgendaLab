@@ -31,19 +31,34 @@ class Base(DeclarativeBase):
 
 
 def create_engine_for(url: str) -> Engine:
-    """O engine para a URL indicada, com integridade referencial ligada.
+    """O engine para a URL indicada, com dois desvios do comportamento padrão do SQLite.
 
-    O SQLite vem com chaves estrangeiras **desligadas** por padrão, por compatibilidade histórica.
-    Declarar a `ForeignKey` no modelo não basta: sem este `PRAGMA`, uma reserva poderia apontar para
-    um espaço que não existe e o banco aceitaria em silêncio.
+    **Integridade referencial.** O SQLite vem com chaves estrangeiras desligadas, por
+    compatibilidade histórica. Declarar a `ForeignKey` no modelo não basta: sem o `PRAGMA`, uma
+    reserva poderia apontar para um espaço que não existe e o banco aceitaria em silêncio.
+
+    **Transações de verdade.** O driver `pysqlite` gerencia transações por conta própria e de um
+    jeito que não abre `BEGIN` quando deveria — o que faz `SAVEPOINT` rodar fora de transação e,
+    pior, faz um `rollback` posterior não ter o que desfazer. O efeito prático seria grave e
+    silencioso: uma requisição que falhasse no meio deixaria gravado o que já tinha escrito,
+    exatamente o oposto do que o ADR-0003 promete ao pôr o limite transacional na requisição.
+
+    A correção é a recomendada pela documentação do SQLAlchemy: desligar o controle de transação do
+    driver e emitir o `BEGIN` explicitamente. Está verificada por
+    `tests/e2e/test_criterios_da_borda.py`, que grava, falha de propósito e confere que nada ficou.
     """
     engine = create_engine(url)
 
     @event.listens_for(engine, "connect")
-    def _ligar_chaves_estrangeiras(dbapi_connection: Any, _: Any) -> None:  # noqa: ANN401
+    def _preparar_conexao(dbapi_connection: Any, _: Any) -> None:  # noqa: ANN401
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+        dbapi_connection.isolation_level = None  # o SQLAlchemy passa a controlar a transação
+
+    @event.listens_for(engine, "begin")
+    def _abrir_transacao(conn: Any) -> None:  # noqa: ANN401
+        conn.exec_driver_sql("BEGIN")
 
     return engine
 

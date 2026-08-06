@@ -50,11 +50,25 @@ class ListSpacesQuery:
 
 
 @dataclass(frozen=True, slots=True)
+class GetSpaceQuery:
+    """UC-02, quando o cliente já sabe qual espaço quer."""
+
+    code: str
+
+
+@dataclass(frozen=True, slots=True)
 class CheckAvailabilityQuery:
     """UC-03. `day` é uma data, não um intervalo: a agenda é sempre de um dia inteiro."""
 
     space_code: str
     day: date
+
+
+@dataclass(frozen=True, slots=True)
+class GetBookingQuery:
+    """UC-03, para uma reserva específica — o que o cliente faz logo após criá-la."""
+
+    booking_id: UUID
 
 
 @dataclass(frozen=True, slots=True)
