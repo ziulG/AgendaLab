@@ -143,7 +143,10 @@ sendo respeitada.
 
 ## Conformidade
 
-- **`docs/` contém apenas Markdown** e o PDF do enunciado; nenhuma imagem de diagrama versionada.
+- **Nenhuma imagem de diagrama versionada** — `docs/` contém Markdown, o PDF do enunciado e, em
+  `docs/imagens/`, as capturas de tela do sistema em execução que o documento de defesa exige
+  (Opção B do enunciado). Capturas não são diagramas: registram o comportamento de um momento, não
+  a estrutura, e por isso não sofrem do problema de sincronia que motivou esta decisão.
 - **`scripts/valida_diagramas.py`** roda sem erro sobre `docs/`:
   ```bash
   python3 scripts/valida_diagramas.py

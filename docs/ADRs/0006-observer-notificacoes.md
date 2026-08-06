@@ -148,8 +148,9 @@ raciocínio: uma reserva legitimamente aprovada não deve ser desfeita porque o 
 - **`src/agendalab/domain/events/`** — eventos e publicador, sem nenhum import de infraestrutura.
 - **`src/agendalab/infrastructure/notifications/`** — `LogNotifier` e `NotificationInbox`, ambos
   implementando `EventObserver`. Nenhum deles é importado pelo domínio.
-- **`src/agendalab/presentation/dependencies.py`** — único lugar onde os observadores concretos são
-  registrados no publicador.
+- **`src/agendalab/presentation/main.py`** — único lugar onde os observadores concretos são
+  registrados no publicador: as duas chamadas `subscribe` vivem no composition root `create_app`
+  (`dependencies.py` apenas expõe o publicador e a caixa já montados, via `app.state`).
 - **`tests/unit/events/test_publisher.py`** — verifica a distribuição a múltiplos observadores e o
   isolamento de falhas: um observador que levanta exceção não impede os demais de receberem o evento.
 - **`tests/unit/use_cases/`** — cada caso de uso que transiciona uma reserva tem teste afirmando que

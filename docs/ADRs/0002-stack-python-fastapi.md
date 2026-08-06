@@ -133,8 +133,10 @@ A pilha completa:
 - **`pyproject.toml`** — declara `requires-python = ">=3.12"` e as dependências desta decisão.
 - **Ausência de `import fastapi` e `import pydantic`** sob `domain/` e `application/`, verificada por
   `tests/architecture/test_dependency_rule.py`.
-- **`src/agendalab/presentation/error_handlers.py`** — único arquivo do projeto que menciona códigos
-  de status HTTP.
+- **`src/agendalab/presentation/error_handlers.py`** — único arquivo do projeto que **traduz erro de
+  domínio em código de status HTTP**. Os routers (`api/bookings.py`, `api/spaces.py`) mencionam
+  `HTTPStatus` apenas para declarar códigos de sucesso e documentar respostas no OpenAPI — nenhum
+  deles decide status a partir de erro.
 - **`/docs` acessível** com a aplicação rodando, conforme
   [RNF-06](../ESPECIFICACAO.md#9-requisitos-não-funcionais).
 - **Ausência de qualquer diretório de front-end** no repositório — coerência com a decisão registrada.

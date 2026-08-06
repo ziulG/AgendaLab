@@ -23,18 +23,18 @@ estreito de propósito, e o que ficou de fora está registrado em ADR, não esqu
 
 ## Estado do projeto
 
-> **Fase atual: base arquitetural concluída.** A documentação, os ADRs e os diagramas estão prontos.
-> A implementação começa em seguida, dividida em 13 etapas. O sequenciamento e o cronograma estão em
-> [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Projeto concluído.** As 13 etapas do [`docs/ROADMAP.md`](docs/ROADMAP.md) foram executadas:
+> documentação, código, testes e o documento de defesa preenchido com as evidências do sistema
+> rodando.
 
 | Entregável | Situação |
 |---|---|
 | Especificação do MVP | ✅ concluída |
 | Visões C4 (níveis 1, 2 e 3) | ✅ concluídas |
-| 9 ADRs | ✅ concluídos |
-| Documento de defesa | 🔶 esqueleto pronto; depende do código |
-| Código-fonte | ⬜ a implementar |
-| Suíte de testes | ⬜ a implementar |
+| 9 ADRs | ✅ concluídos, com *Conformidade* conferida contra o código |
+| Documento de defesa | ✅ concluído, com capturas, trechos reais e saída dos testes |
+| Código-fonte | ✅ implementado nas quatro camadas |
+| Suíte de testes | ✅ 671 testes verdes; cobertura de 100% em `src/agendalab/` |
 
 ## Como navegar a documentação
 
@@ -87,10 +87,11 @@ se uma camada interna importar uma externa.
 
 ## Como executar
 
-> ⬜ Disponível quando a implementação começar. Os comandos abaixo são os previstos e serão
-> confirmados de ponta a ponta antes da entrega.
+Os comandos foram verificados de ponta a ponta a partir de um clone limpo; a saída real de cada um
+está na [§2 do documento de defesa](docs/DEFESA.md#2-como-executar-o-sistema).
 
 ```bash
+git clone https://github.com/ziulG/AgendaLab.git && cd AgendaLab
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 uvicorn agendalab.presentation.main:app --reload
@@ -154,8 +155,9 @@ Estas não são falhas descobertas depois — são fronteiras desenhadas e regis
 │   ├── imagens/             capturas de tela da defesa
 │   └── Projeto_final.pdf    enunciado da disciplina
 ├── scripts/
-│   └── valida_diagramas.py  verificação automatizada dos diagramas
-├── src/agendalab/           código-fonte (a implementar)
-├── tests/                   suíte de testes (a implementar)
+│   ├── valida_diagramas.py  verificação automatizada dos diagramas
+│   └── valida_links.py      verificação dos links internos da documentação
+├── src/agendalab/           código-fonte nas quatro camadas
+├── tests/                   suíte de testes: arquitetura, unidade, integração e ponta a ponta
 └── pyproject.toml
 ```

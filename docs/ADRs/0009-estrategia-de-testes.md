@@ -161,7 +161,10 @@ inglês" do [glossário](../GLOSSARIO.md), e registrada lá.
   ```bash
   pytest --cov --cov-report=term-missing
   ```
-- **Marcadores declarados** em `pyproject.toml` (`unit`, `integration`, `e2e`) e aplicados nos testes.
+- **Marcadores declarados** em `pyproject.toml` (`unit`, `integration`, `e2e`) e aplicados
+  automaticamente a partir do diretório de cada teste, pelo hook `pytest_collection_modifyitems` em
+  `tests/conftest.py` — não há decorador `@pytest.mark` espalhado pelos arquivos, e um teste não
+  pode ficar sem marcador por esquecimento.
 - **A saída de `pytest -v`** consta do [documento de defesa](../DEFESA.md) como evidência.
 
 ## Referências

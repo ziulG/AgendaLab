@@ -171,8 +171,8 @@ no domínio, e não vaza para o esquema.
 - **`src/agendalab/application/use_cases/approve_booking.py`**, `reject_booking.py` e
   `cancel_booking.py` — nenhum deles deve comparar `booking.status` para decidir se prossegue. Se um
   `if booking.status == ...` aparecer nesses arquivos, a decisão foi violada.
-- **`tests/unit/states/test_transitions.py`** — cobre as 12 células da tabela de transições: as 6
-  permitidas e as 6 recusadas.
+- **`tests/unit/states/test_transitions.py`** — cobre as 12 células da tabela de transições: as 4
+  permitidas (`PENDING` aceita as três operações; `APPROVED`, só o cancelamento) e as 8 recusadas.
 - **`tests/unit/states/test_estado_persistido.py`** — afirma que todo `BookingStatus` tem estado
   correspondente na reconstrução.
 - **Diagramas:** [ARQUITETURA §5 — Máquina de estados](../ARQUITETURA.md#5-máquina-de-estados-da-reserva)
