@@ -267,7 +267,7 @@ Todas as rotas aceitam os cabeçalhos de identidade `X-User-Id` e `X-User-Role`
 | `GET` | `/spaces` | qualquer | UC-02 |
 | `GET` | `/spaces/{code}` | qualquer | UC-02 |
 | `GET` | `/spaces/{code}/availability?date=YYYY-MM-DD` | qualquer | UC-03 |
-| `POST` | `/bookings` | `REQUESTER` | UC-04 |
+| `POST` | `/bookings` | qualquer | UC-04 |
 | `GET` | `/bookings` | qualquer | UC-03 |
 | `GET` | `/bookings/{id}` | qualquer | UC-03 |
 | `POST` | `/bookings/{id}/approval` | `MANAGER` | UC-05 |

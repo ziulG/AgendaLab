@@ -14,6 +14,9 @@ caso de uso muda — é o que o ADR-0001 promete, e este arquivo é onde a prome
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from agendalab.domain.events.publisher import EventPublisher
@@ -40,15 +43,33 @@ Não exponha esta aplicação em rede.
 
 def create_app(db_url: str = DEFAULT_DB_URL) -> FastAPI:
     """A aplicação, ligada ao banco indicado."""
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        """Cria o esquema quando a aplicação **sobe**, não quando o módulo é importado.
+
+        Sem migrações: o esquema nasce dos metadados a cada inicialização (ADR-0003).
+
+        A distinção importa por causa da linha `app = create_app()` no fim deste arquivo, que existe
+        para o `uvicorn`. Com `create_schema` chamado direto em `create_app`, um simples
+        `import agendalab.presentation.main` — feito por qualquer teste, ou pelo próprio `--help` de
+        uma ferramenta — criava um arquivo de banco no diretório de trabalho. Importar um módulo não
+        deve tocar disco.
+        """
+        create_schema(app.state.engine)
+        yield
+
     app = FastAPI(
         title="AgendaLab",
         description=DESCRICAO,
         version="0.1.0",
         summary="Projeto Final de Arquitetura de Software — UFMA",
+        lifespan=lifespan,
     )
 
+    # `create_engine` é preguiçoso: não abre conexão e não cria arquivo. O que tocava disco era a
+    # criação do esquema, agora adiada para o `lifespan`.
     engine = create_engine_for(db_url)
-    create_schema(engine)  # sem migrações: o esquema nasce dos metadados (ADR-0003)
     app.state.engine = engine
     app.state.sessions = session_factory(engine)
 

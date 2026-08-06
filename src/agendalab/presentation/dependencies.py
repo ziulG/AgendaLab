@@ -113,23 +113,10 @@ def require_manager(actor: ActorDep) -> Actor:
 
 ManagerDep = Annotated[Actor, Depends(require_manager)]
 
-
-def require_requester(actor: ActorDep) -> Actor:
-    """§7 — solicitar reserva é ação de solicitante.
-
-    Não há RN numerada para isto: vem da coluna "papel exigido" da tabela de rotas, que atribui
-    `POST /bookings` ao `REQUESTER`. Fica aqui, junto da outra verificação de papel, para que a
-    regra de quem-pode-o-quê seja legível num arquivo só.
-    """
-    if actor.role is not Role.REQUESTER:
-        raise PermissionDenied(
-            f"Solicitar reserva é ação de {Role.REQUESTER}, e {actor.user_id} é {actor.role}.",
-            "RN-11",
-        )
-    return actor
-
-
-RequesterDep = Annotated[Actor, Depends(require_requester)]
+# Não existe um `require_requester`, e a ausência é deliberada. Solicitar reserva não tem papel
+# exigido: qualquer identidade válida pode pedir uma sala, gestor inclusive. A RN-11 fala de aprovar
+# e rejeitar, e nenhuma outra regra numerada restringe quem solicita — um gestor impedido de
+# reservar um laboratório seria restrição inventada, não regra do sistema.
 
 
 # --- relógio -------------------------------------------------------------------------------------

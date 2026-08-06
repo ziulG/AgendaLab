@@ -143,8 +143,13 @@ preservar, migração seria infraestrutura sem propósito.
   `tests/architecture/test_dependency_rule.py`.
 - **`src/agendalab/infrastructure/persistence/models.py`** — nenhuma classe aqui é importada pelo
   domínio.
-- **`tests/integration/test_repositories.py`** — grava e relê cada entidade, afirmando que o tipo
-  devolvido é a entidade de domínio e que nenhum campo se perde na ida e volta.
+- **`tests/integration/test_sqlalchemy_space_repository.py`** e
+  **`test_sqlalchemy_booking_repository.py`** — afirmam que o tipo devolvido é a entidade de
+  domínio, nunca o modelo ORM, e que o dado sobrevive ao fim da sessão. Os dois herdam a mesma
+  bateria de `tests/contracts/` que a implementação em memória passa, o que impede as duas de
+  divergirem.
+- **`tests/integration/test_mappers.py`** — percorre os campos declarados nas dataclasses e exige
+  que **todos** sobrevivam à ida e volta. Um campo esquecido no mapper quebra a suíte.
 - **`tests/unit/`** — a suíte inteira roda sem criar arquivo de banco. Se algum teste unitário passar
   a exigir banco, a decisão foi violada.
 

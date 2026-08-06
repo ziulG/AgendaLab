@@ -40,7 +40,6 @@ from agendalab.presentation.dependencies import (
     ActorDep,
     ManagerDep,
     NowDep,
-    RequesterDep,
     get_actor,
     get_approve_booking,
     get_cancel_booking,
@@ -69,12 +68,15 @@ RESPOSTAS_DE_TRANSICAO = {
 def request_booking(
     body: RequestBookingRequest,
     caso_de_uso: Annotated[RequestBooking, Depends(get_request_booking)],
-    actor: RequesterDep,
+    actor: ActorDep,
     now: NowDep,
 ) -> BookingResponse:
     """O intervalo vira `TimeSlot` aqui — se `start_at >= end_at`, a RN-03 recusa na construção.
 
     `requester_id` vem do cabeçalho, nunca do corpo: quem solicita é quem fez a requisição.
+
+    Sem exigência de papel: qualquer identidade válida solicita, gestor inclusive. A RN-11 restringe
+    aprovar e rejeitar, não pedir.
     """
     criada = caso_de_uso.execute(
         RequestBookingCommand(
