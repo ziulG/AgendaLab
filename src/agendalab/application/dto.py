@@ -21,9 +21,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from datetime import date
+    from datetime import date, datetime
 
     from agendalab.domain.entities.space import SpaceKind
+    from agendalab.domain.value_objects.time_slot import TimeSlot
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,3 +53,21 @@ class CheckAvailabilityQuery:
 
     space_code: str
     day: date
+
+
+@dataclass(frozen=True, slots=True)
+class RequestBookingCommand:
+    """UC-04.
+
+    `now` é o campo que merece explicação. O instante atual **entra pelo comando** em vez de ser
+    lido no caso de uso, e não é preciosismo: as regras de antecedência (RN-09 e RN-10) comparam o
+    início da reserva com o agora, e um `datetime.now()` dentro do domínio faria o mesmo teste dar
+    resultados diferentes conforme a hora em que roda. Quem sabe que horas são é a borda HTTP.
+    """
+
+    space_code: str
+    requester_id: str
+    slot: TimeSlot
+    purpose: str
+    attendees: int
+    now: datetime
