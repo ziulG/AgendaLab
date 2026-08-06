@@ -31,6 +31,7 @@ FORBIDDEN_IMPORTS: dict[str, tuple[str, ...]] = {
         "agendalab.presentation",
         "fastapi",
         "sqlalchemy",
+        "pydantic",
     ),
     "infrastructure": ("agendalab.presentation",),
     "presentation": (),
