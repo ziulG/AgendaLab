@@ -16,11 +16,6 @@
 > textual formal com o passo a passo da explicação do projeto, capturas de tela do sistema rodando,
 > trechos do código onde os padrões foram aplicados e a justificativa técnica completa.
 
-> **ESTADO DESTE DOCUMENTO — remover antes da entrega.** O esqueleto e todas as seções de
-> justificativa técnica estão escritos. As seções marcadas com `> A PREENCHER` dependem do código
-> existir e serão completadas na fase de implementação: trechos de código reais com caminho e linha,
-> capturas de tela e saída dos testes.
-
 ---
 
 ## Sumário
@@ -58,9 +53,6 @@ O escopo é deliberadamente estreito — sete casos de uso, listados em
 
 ## 2. Como executar o sistema
 
-> A PREENCHER na implementação: comandos verificados de ponta a ponta, com a saída real de cada um.
-> O conteúdo abaixo é a estrutura prevista e será confirmado antes da entrega.
-
 ```bash
 git clone https://github.com/ziulG/AgendaLab.git
 cd AgendaLab
@@ -69,7 +61,37 @@ pip install -e ".[dev]"
 uvicorn agendalab.presentation.main:app --reload
 ```
 
-Com a aplicação no ar, a documentação interativa fica em `http://127.0.0.1:8000/docs`.
+Os comandos foram executados de ponta a ponta em 05/08/2026, a partir de um clone limpo do
+repositório publicado. A saída real de cada um — com três edições de legibilidade, todas marcadas
+ou descritas: a saída do `pip` truncada, sua última linha quebrada para caber na largura do
+documento, e o caminho local abreviado para `/…/`:
+
+```text
+$ git clone https://github.com/ziulG/AgendaLab.git
+Cloning into 'AgendaLab'...
+
+$ pip install -e ".[dev]"
+[... resolução e download das dependências: saída truncada ...]
+Successfully installed agendalab-0.1.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.14.2
+certifi-2026.7.22 click-8.4.2 coverage-7.15.3 fastapi-0.141.1 freezegun-1.5.5 h11-0.16.0
+httpcore-1.0.9 httptools-0.8.0 httpx-0.28.1 idna-3.18 iniconfig-2.3.0 packaging-26.3 pluggy-1.6.0
+pydantic-2.13.4 pydantic-core-2.46.4 pydantic-settings-2.14.2 pygments-2.20.0 pytest-9.1.1
+pytest-cov-7.1.0 python-dateutil-2.9.0.post0 python-dotenv-1.2.2 pyyaml-6.0.3 ruff-0.16.1
+six-1.17.0 sqlalchemy-2.0.51 starlette-1.4.1 typing-extensions-4.16.0 typing-inspection-0.4.2
+uvicorn-0.52.1 uvloop-0.22.1 watchfiles-1.2.0 websockets-17.0.1
+
+$ uvicorn agendalab.presentation.main:app --reload
+INFO:     Will watch for changes in these directories: ['/…/AgendaLab']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [75903] using WatchFiles
+INFO:     Started server process [75907]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+Com a aplicação no ar, a documentação interativa fica em `http://127.0.0.1:8000/docs`, e o arquivo
+`agendalab.db` aparece na raiz do clone na primeira execução — criado pelo `lifespan` da aplicação,
+como prometido abaixo.
 
 Requisitos: Python 3.12 ou superior. Nenhum serviço externo — o banco é um arquivo SQLite criado na
 primeira execução ([ADR-0003](ADRs/0003-persistencia-sqlite-repository.md)).
@@ -155,8 +177,46 @@ razões diferentes para mudar. Um quarto tipo de espaço exigiria editar um arqu
 
 ### A solução
 
-> A PREENCHER: trecho real de `domain/policies/booking_policy.py` com a interface, e de uma política
-> concreta, com caminho e linha.
+A interface tem dois métodos: o estado em que a reserva nasce e a validação. É um `Protocol` — as
+três políticas concretas não herdam dela, e a conformidade estrutural é verificada por teste.
+
+**`src/agendalab/domain/policies/booking_policy.py`, linhas 55–61:**
+
+```python
+@runtime_checkable
+class BookingPolicy(Protocol):
+    def initial_status(self) -> BookingStatus:
+        """Estado em que a reserva nasce sob esta política (RN-07)."""
+
+    def validate(self, request: BookingRequest, context: PolicyContext) -> None:
+        """Passa em silêncio, ou levanta `PolicyViolation` com a regra que recusou."""
+```
+
+Uma política concreta — a dos laboratórios, com as duas verificações da RN-09:
+
+**`src/agendalab/domain/policies/managed_access.py`, linhas 19–37:**
+
+```python
+class ManagedAccessPolicy:
+    MIN_NOTICE_HOURS = 24
+    MAX_DURATION_HOURS = 4
+
+    def initial_status(self) -> BookingStatus:
+        return BookingStatus.PENDING
+
+    def validate(self, request: BookingRequest, context: PolicyContext) -> None:
+        """RN-09 — antecedência mínima e duração máxima, nesta ordem."""
+        if request.slot.start_at - context.now < timedelta(hours=self.MIN_NOTICE_HOURS):
+            raise PolicyViolation(
+                f"Reservar laboratório exige {self.MIN_NOTICE_HOURS}h de antecedência.",
+                "RN-09",
+            )
+        if request.slot.duration_hours() > self.MAX_DURATION_HOURS:
+            raise PolicyViolation(
+                f"Uma reserva de laboratório não pode passar de {self.MAX_DURATION_HOURS}h.",
+                "RN-09",
+            )
+```
 
 ### Diagrama
 
@@ -168,7 +228,60 @@ razões diferentes para mudar. Um quarto tipo de espaço exigiria editar um arqu
 com a abstração `BookingPolicy`. Acrescentar um quarto tipo de espaço é criar uma classe; nenhum
 arquivo existente muda. É o princípio aberto/fechado com demonstração concreta.
 
-> A PREENCHER: saída dos testes de `tests/unit/policies/`.
+Saída de `pytest tests/unit/policies -v -o addopts=""` — o `-o addopts=""` desativa o `-q` que é
+padrão do projeto. Os nomes dos casos são a especificação das três políticas, borda por borda:
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/luizg/FinalProjectAS/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/luizg/FinalProjectAS
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 39 items
+
+tests/unit/policies/test_managed_access.py::test_laboratorio_exige_decisao_do_gestor PASSED [  2%]
+tests/unit/policies/test_managed_access.py::test_solicitacao_dentro_das_regras_e_aceita PASSED [  5%]
+tests/unit/policies/test_managed_access.py::test_exatamente_vinte_e_quatro_horas_de_antecedencia_passa PASSED [  7%]
+tests/unit/policies/test_managed_access.py::test_um_minuto_a_menos_de_antecedencia_recusa PASSED [ 10%]
+tests/unit/policies/test_managed_access.py::test_reserva_para_daqui_a_pouco_recusa PASSED [ 12%]
+tests/unit/policies/test_managed_access.py::test_exatamente_quatro_horas_de_duracao_passa PASSED [ 15%]
+tests/unit/policies/test_managed_access.py::test_quatro_horas_e_um_minuto_recusa PASSED [ 17%]
+tests/unit/policies/test_managed_access.py::test_antecedencia_e_verificada_antes_da_duracao PASSED [ 20%]
+tests/unit/policies/test_open_access.py::test_sala_de_aula_tem_aprovacao_automatica PASSED [ 23%]
+tests/unit/policies/test_open_access.py::test_primeira_reserva_da_semana_e_aceita PASSED [ 25%]
+tests/unit/policies/test_open_access.py::test_exatamente_oito_horas_na_semana_passa PASSED [ 28%]
+tests/unit/policies/test_open_access.py::test_oito_horas_e_um_minuto_na_semana_recusa PASSED [ 30%]
+tests/unit/policies/test_open_access.py::test_a_reserva_em_analise_conta_no_total PASSED [ 33%]
+tests/unit/policies/test_open_access.py::test_uma_unica_reserva_acima_do_teto_recusa PASSED [ 35%]
+tests/unit/policies/test_open_access.py::test_horas_quebradas_somam_sem_erro_de_arredondamento PASSED [ 38%]
+tests/unit/policies/test_open_access.py::test_reserva_inativa_nao_ocupa_o_teto[REJECTED] PASSED [ 41%]
+tests/unit/policies/test_open_access.py::test_reserva_inativa_nao_ocupa_o_teto[CANCELLED] PASSED [ 43%]
+tests/unit/policies/test_open_access.py::test_reserva_ativa_ocupa_o_teto[PENDING] PASSED [ 46%]
+tests/unit/policies/test_open_access.py::test_reserva_ativa_ocupa_o_teto[APPROVED] PASSED [ 48%]
+tests/unit/policies/test_open_access.py::test_reserva_de_outra_semana_nao_ocupa_o_teto PASSED [ 51%]
+tests/unit/policies/test_open_access.py::test_o_teto_segue_a_semana_da_reserva_e_nao_a_de_hoje PASSED [ 53%]
+tests/unit/policies/test_registry.py::test_todo_tipo_de_espaco_tem_politica[CLASSROOM] PASSED [ 56%]
+tests/unit/policies/test_registry.py::test_todo_tipo_de_espaco_tem_politica[LAB] PASSED [ 58%]
+tests/unit/policies/test_registry.py::test_todo_tipo_de_espaco_tem_politica[AUDITORIUM] PASSED [ 61%]
+tests/unit/policies/test_registry.py::test_cada_tipo_recebe_a_politica_da_especificacao[CLASSROOM] PASSED [ 64%]
+tests/unit/policies/test_registry.py::test_cada_tipo_recebe_a_politica_da_especificacao[LAB] PASSED [ 66%]
+tests/unit/policies/test_registry.py::test_cada_tipo_recebe_a_politica_da_especificacao[AUDITORIUM] PASSED [ 69%]
+tests/unit/policies/test_registry.py::test_toda_politica_registrada_satisfaz_o_protocolo[CLASSROOM] PASSED [ 71%]
+tests/unit/policies/test_registry.py::test_toda_politica_registrada_satisfaz_o_protocolo[LAB] PASSED [ 74%]
+tests/unit/policies/test_registry.py::test_toda_politica_registrada_satisfaz_o_protocolo[AUDITORIUM] PASSED [ 76%]
+tests/unit/policies/test_registry.py::test_politicas_distintas_para_tipos_distintos PASSED [ 79%]
+tests/unit/policies/test_restricted_access.py::test_auditorio_exige_decisao_do_gestor PASSED [ 82%]
+tests/unit/policies/test_restricted_access.py::test_solicitacao_dentro_das_regras_e_aceita PASSED [ 84%]
+tests/unit/policies/test_restricted_access.py::test_exatamente_setenta_e_duas_horas_de_antecedencia_passa PASSED [ 87%]
+tests/unit/policies/test_restricted_access.py::test_um_minuto_a_menos_de_antecedencia_recusa PASSED [ 89%]
+tests/unit/policies/test_restricted_access.py::test_antecedencia_do_auditorio_e_maior_que_a_do_laboratorio PASSED [ 92%]
+tests/unit/policies/test_restricted_access.py::test_exatamente_vinte_participantes_passa PASSED [ 94%]
+tests/unit/policies/test_restricted_access.py::test_dezenove_participantes_recusa PASSED [ 97%]
+tests/unit/policies/test_restricted_access.py::test_antecedencia_e_verificada_antes_dos_participantes PASSED [100%]
+
+============================== 39 passed in 0.02s ==============================
+```
 
 ### Uma nota sobre honestidade na contagem
 
@@ -199,11 +312,57 @@ alternativa de uma tabela declarativa de transições.
 
 ### A solução
 
-> A PREENCHER: trecho real de `domain/states/booking_state.py` mostrando que a **recusa é o
-> comportamento padrão da classe base**, e de `PendingState` sobrescrevendo apenas o que permite.
+A **recusa é o comportamento padrão da classe base**: os três métodos de transição levantam
+`InvalidStateTransition` no contrato, e cada estado concreto sobrescreve apenas o que permite.
+
+**`src/agendalab/domain/states/booking_state.py`, linhas 28–40:**
+
+```python
+class BookingState(ABC):
+    @abstractmethod
+    def status(self) -> BookingStatus:
+        """O membro de `BookingStatus` que este estado representa."""
+
+    def approve(self, booking: Booking, actor: Actor, now: datetime) -> None:
+        raise InvalidStateTransition(self.status(), "approve")
+
+    def reject(self, booking: Booking, actor: Actor, reason: str, now: datetime) -> None:
+        raise InvalidStateTransition(self.status(), "reject")
+
+    def cancel(self, booking: Booking, actor: Actor, now: datetime) -> None:
+        raise InvalidStateTransition(self.status(), "cancel")
+```
+
+Os estados concretos vivem em `concrete_states.py`. O `PendingState` é o único que aceita as três
+transições — e é toda a primeira linha da tabela acima, em código:
+
+**`src/agendalab/domain/states/concrete_states.py`, linhas 23–40:**
+
+```python
+class PendingState(BookingState):
+    """Aguardando decisão. Aceita as três transições."""
+
+    def status(self) -> BookingStatus:
+        return BookingStatus.PENDING
+
+    def approve(self, booking: Booking, actor: Actor, now: datetime) -> None:
+        self._record_decision(booking, BookingStatus.APPROVED, actor, now)
+
+    def reject(self, booking: Booking, actor: Actor, reason: str, now: datetime) -> None:
+        if not reason.strip():
+            raise MissingRejectionReason()  # RN-14 — antes de transicionar, não depois
+        self._record_decision(booking, BookingStatus.REJECTED, actor, now)
+        booking.rejection_reason = reason
+
+    def cancel(self, booking: Booking, actor: Actor, now: datetime) -> None:
+        self._ensure_may_cancel(booking, actor)  # RN-12
+        self._record_decision(booking, BookingStatus.CANCELLED, actor, now)
+```
 
 O ônus da escrita é invertido: um estado novo é seguro por omissão. Se o autor esquecer de habilitar
-uma transição, o sistema recusa — em vez de permitir indevidamente.
+uma transição, o sistema recusa — em vez de permitir indevidamente. `RejectedState` e
+`CancelledState`, no mesmo arquivo, não sobrescrevem transição alguma: são terminais, e ler as
+quatro classes é ler a tabela.
 
 ### Diagramas
 
@@ -216,7 +375,53 @@ Os casos de uso `ApproveBooking`, `RejectBooking` e `CancelBooking` não compara
 decidir se prosseguem. `Booking` delega ao seu estado atual, e a regra de ciclo de vida existe em um
 só lugar.
 
-> A PREENCHER: saída de `tests/unit/states/test_transitions.py`, cobrindo as 12 células da tabela.
+Saída de `pytest tests/unit/states/test_transitions.py -v -o addopts=""`. Os identificadores dos
+casos parametrizados são as células da tabela: 4 permitidas, 8 recusadas, e a própria contagem de
+12 é afirmada por um teste:
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/luizg/FinalProjectAS/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/luizg/FinalProjectAS
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 31 items
+
+tests/unit/states/test_transitions.py::test_a_tabela_tem_doze_celulas PASSED [  3%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_leva_ao_estado_esperado[PENDING-approve] PASSED [  6%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_leva_ao_estado_esperado[PENDING-reject] PASSED [  9%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_leva_ao_estado_esperado[PENDING-cancel] PASSED [ 12%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_leva_ao_estado_esperado[APPROVED-cancel] PASSED [ 16%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_registra_quem_decidiu_e_quando[PENDING-approve] PASSED [ 19%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_registra_quem_decidiu_e_quando[PENDING-reject] PASSED [ 22%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_registra_quem_decidiu_e_quando[PENDING-cancel] PASSED [ 25%]
+tests/unit/states/test_transitions.py::test_transicao_permitida_registra_quem_decidiu_e_quando[APPROVED-cancel] PASSED [ 29%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[APPROVED-approve] PASSED [ 32%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[APPROVED-reject] PASSED [ 35%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[REJECTED-approve] PASSED [ 38%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[REJECTED-reject] PASSED [ 41%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[REJECTED-cancel] PASSED [ 45%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[CANCELLED-approve] PASSED [ 48%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[CANCELLED-reject] PASSED [ 51%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_e_recusada[CANCELLED-cancel] PASSED [ 54%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[APPROVED-approve] PASSED [ 58%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[APPROVED-reject] PASSED [ 61%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[REJECTED-approve] PASSED [ 64%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[REJECTED-reject] PASSED [ 67%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[REJECTED-cancel] PASSED [ 70%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[CANCELLED-approve] PASSED [ 74%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[CANCELLED-reject] PASSED [ 77%]
+tests/unit/states/test_transitions.py::test_transicao_proibida_nao_altera_a_reserva[CANCELLED-cancel] PASSED [ 80%]
+tests/unit/states/test_transitions.py::test_rejeicao_guarda_o_motivo PASSED [ 83%]
+tests/unit/states/test_transitions.py::test_rejeicao_sem_motivo_e_recusada[vazio] PASSED [ 87%]
+tests/unit/states/test_transitions.py::test_rejeicao_sem_motivo_e_recusada[espacos] PASSED [ 90%]
+tests/unit/states/test_transitions.py::test_rejeicao_sem_motivo_e_recusada[quebra_de_linha] PASSED [ 93%]
+tests/unit/states/test_transitions.py::test_rejeicao_sem_motivo_nao_altera_a_reserva PASSED [ 96%]
+tests/unit/states/test_transitions.py::test_aprovacao_e_cancelamento_nao_preenchem_motivo PASSED [100%]
+
+============================== 31 passed in 0.01s ==============================
+```
 
 ## 7. Design pattern 3 — Observer
 
@@ -234,8 +439,62 @@ multiplicação: 4 transições × N canais.
 
 ### A solução
 
-> A PREENCHER: trecho real de `domain/events/publisher.py` com `EventPublisher` e `EventObserver`, e
-> do registro dos observadores em `presentation/dependencies.py`.
+O sujeito e a interface do observador vivem no domínio; os observadores concretos, na
+infraestrutura. O publicador conhece apenas a interface:
+
+**`src/agendalab/domain/events/publisher.py`, linhas 19–51:**
+
+```python
+@runtime_checkable
+class EventObserver(Protocol):
+    def handle(self, event: BookingEvent) -> None:
+        """Reage ao evento. Uma falha aqui não interrompe a operação que o originou."""
+
+
+class EventPublisher:
+    def __init__(self) -> None:
+        # Lista, e não conjunto: a entrega segue a ordem de inscrição.
+        self._observers: list[EventObserver] = []
+
+    def subscribe(self, observer: EventObserver) -> None:
+        self._observers.append(observer)
+
+    def publish(self, event: BookingEvent) -> None:
+        """Entrega o evento a todos os inscritos, isolando a falha de cada um.
+
+        Uma reserva legitimamente aprovada não pode ser desfeita porque o log falhou: notificação
+        é efeito colateral, e efeito colateral não invalida o fato. A exceção é registrada e não
+        se propaga, e não impede os demais observadores de receberem o evento.
+
+        `Exception`, e não `BaseException`: `KeyboardInterrupt` e `SystemExit` precisam continuar
+        subindo, senão um Ctrl-C viraria silêncio.
+        """
+        for observer in self._observers:
+            try:
+                observer.handle(event)
+            except Exception:
+                logger.exception(
+                    "Observador %s falhou ao tratar %s; os demais seguem sendo notificados.",
+                    type(observer).__name__,
+                    type(event).__name__,
+                )
+```
+
+O registro dos observadores concretos acontece uma única vez, no composition root — a função
+`create_app`:
+
+**`src/agendalab/presentation/main.py`, linhas 76–83:**
+
+```python
+    # O Observer, montado. O publicador conhece a interface; estes dois a implementam, e nenhum
+    # deles é conhecido pelo domínio. Um terceiro canal seria mais uma linha `subscribe`.
+    inbox = NotificationInbox()
+    publisher = EventPublisher()
+    publisher.subscribe(LogNotifier())
+    publisher.subscribe(inbox)
+    app.state.inbox = inbox
+    app.state.publisher = publisher
+```
 
 Um detalhe de projeto que merece destaque: **falha de observador não derruba a operação de negócio**.
 O `publish` isola cada observador — uma reserva legitimamente aprovada não deve ser desfeita porque o
@@ -251,7 +510,13 @@ O endpoint `GET /notifications` existe para tornar o padrão visível: aprovar u
 a caixa de entrada mostra a relação de causa e efeito. Essa decisão — criar um endpoint em favor da
 demonstrabilidade — está registrada no ADR em vez de disfarçada.
 
-> A PREENCHER: capturas de tela da sequência aprovar → consultar `/notifications`.
+A sequência, capturada do sistema rodando — a gestora aprova a reserva do laboratório (passo 8 do
+roteiro da [§9](#9-demonstração-do-sistema-em-funcionamento)) e a caixa registra o evento ao lado
+das duas solicitações anteriores (passo 10):
+
+![Aprovação pelo gestor — a reserva do laboratório vai a APPROVED](imagens/passo-08-aprovacao.png)
+
+![GET /notifications — as três notificações produzidas pelos eventos do roteiro](imagens/passo-10-notifications.png)
 
 ## 8. Princípios de projeto: as evidências
 
@@ -270,7 +535,47 @@ A regra de dependência não é convenção: é **restrição executável**.
 `tests/architecture/test_dependency_rule.py` analisa os imports de cada módulo por árvore sintática e
 falha a suíte se uma camada interna importar uma externa.
 
-> A PREENCHER: saída do teste de arquitetura.
+Saída de `pytest tests/architecture -v -o addopts=""`. São três verificadores — a regra de
+dependência, "HTTP só na borda" e "o State não é contornado" — e cada um traz testes do próprio
+verificador, para que a evidência não dependa de um analisador não testado:
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /Users/luizg/FinalProjectAS/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/luizg/FinalProjectAS
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 25 items
+
+tests/architecture/test_dependency_rule.py::test_a_camada_nao_importa_o_que_lhe_e_proibido[domain] PASSED [  4%]
+tests/architecture/test_dependency_rule.py::test_a_camada_nao_importa_o_que_lhe_e_proibido[application] PASSED [  8%]
+tests/architecture/test_dependency_rule.py::test_a_camada_nao_importa_o_que_lhe_e_proibido[infrastructure] PASSED [ 12%]
+tests/architecture/test_dependency_rule.py::test_a_camada_nao_importa_o_que_lhe_e_proibido[presentation] PASSED [ 16%]
+tests/architecture/test_dependency_rule.py::test_as_quatro_camadas_existem_e_sao_analisadas PASSED [ 20%]
+tests/architecture/test_dependency_rule.py::test_import_dentro_de_funcao_tambem_e_detectado PASSED [ 24%]
+tests/architecture/test_dependency_rule.py::test_import_em_comentario_ou_string_nao_conta PASSED [ 28%]
+tests/architecture/test_dependency_rule.py::test_import_relativo_e_resolvido_ate_a_camada_de_origem PASSED [ 32%]
+tests/architecture/test_dependency_rule.py::test_o_verificador_reprova_um_import_proibido PASSED [ 36%]
+tests/architecture/test_http_so_na_borda.py::test_a_camada_interna_nao_fala_http[domain] PASSED [ 40%]
+tests/architecture/test_http_so_na_borda.py::test_a_camada_interna_nao_fala_http[application] PASSED [ 44%]
+tests/architecture/test_http_so_na_borda.py::test_a_camada_interna_nao_fala_http[infrastructure] PASSED [ 48%]
+tests/architecture/test_http_so_na_borda.py::test_a_apresentacao_fala_http PASSED [ 52%]
+tests/architecture/test_http_so_na_borda.py::test_o_verificador_encontra_o_status_escrito_a_mao PASSED [ 56%]
+tests/architecture/test_http_so_na_borda.py::test_o_verificador_encontra_a_excecao_do_framework PASSED [ 60%]
+tests/architecture/test_http_so_na_borda.py::test_status_em_comentario_ou_docstring_nao_conta PASSED [ 64%]
+tests/architecture/test_http_so_na_borda.py::test_numero_fora_da_faixa_de_status_nao_conta PASSED [ 68%]
+tests/architecture/test_state_nao_e_contornado.py::test_a_camada_de_aplicacao_nao_decide_a_partir_do_status PASSED [ 72%]
+tests/architecture/test_state_nao_e_contornado.py::test_a_camada_analisada_nao_esta_vazia PASSED [ 76%]
+tests/architecture/test_state_nao_e_contornado.py::test_o_verificador_encontra_as_formas_de_comparar_status PASSED [ 80%]
+tests/architecture/test_state_nao_e_contornado.py::test_o_verificador_encontra_o_match_sobre_o_status PASSED [ 84%]
+tests/architecture/test_state_nao_e_contornado.py::test_o_verificador_encontra_a_comparacao_dentro_de_funcao PASSED [ 88%]
+tests/architecture/test_state_nao_e_contornado.py::test_comparacao_em_comentario_ou_string_nao_conta PASSED [ 92%]
+tests/architecture/test_state_nao_e_contornado.py::test_usar_o_status_sem_decidir_nada_e_permitido PASSED [ 96%]
+tests/architecture/test_state_nao_e_contornado.py::test_comparar_outro_atributo_nao_e_acusado PASSED [100%]
+
+============================== 25 passed in 0.04s ==============================
+```
 
 ### Alta coesão
 
@@ -303,19 +608,56 @@ código HTTP acontece em um único arquivo. Nenhuma camada interna sabe o que é
 
 ## 9. Demonstração do sistema em funcionamento
 
-> A PREENCHER na implementação. Roteiro previsto, com captura de tela a cada passo:
+Roteiro executado em 05/08/2026 contra o sistema no ar, pela Swagger UI, com captura de tela de
+cada passo. As identidades declaradas nos cabeçalhos são `gestora-gil` (`MANAGER`), `ana-souza` e
+`bruno-lima` (`REQUESTER`); as datas usam o dia da execução como referência. Cada captura mostra os
+cabeçalhos enviados, o `curl` equivalente, o código e o corpo da resposta.
 
 1. Aplicação no ar e Swagger UI em `/docs` — visão geral dos endpoints
-2. Cadastro de espaços dos três tipos (`MANAGER`)
-3. Reserva de sala de aula — nasce **`APPROVED`** pela política de acesso aberto
-4. Reserva de laboratório — nasce **`PENDING`**, exigindo aprovação
+
+   ![Passo 1 — Swagger UI com os onze endpoints, agrupados por espaços, reservas e operação](imagens/passo-01-swagger.png)
+
+2. Cadastro de espaços dos três tipos (`MANAGER`) — a listagem confirma os três (UC-01, UC-02)
+
+   ![Passo 2 — GET /spaces devolve SALA-101, LAB-01 e AUD-01](imagens/passo-02-espacos.png)
+
+3. Reserva de sala de aula — nasce **`APPROVED`** pela política de acesso aberto (RN-08)
+
+   ![Passo 3 — POST /bookings de ana-souza em SALA-101 responde 201 com status APPROVED](imagens/passo-03-sala-approved.png)
+
+4. Reserva de laboratório — nasce **`PENDING`**, exigindo aprovação (RN-09)
+
+   ![Passo 4 — POST /bookings de ana-souza em LAB-01 responde 201 com status PENDING](imagens/passo-04-lab-pending.png)
+
 5. **Conflito de horário** — segunda reserva no mesmo intervalo recebe `409` (RN-01)
+
+   ![Passo 5 — POST /bookings de bruno-lima no horário ocupado responde 409 ScheduleConflict](imagens/passo-05-conflito-409.png)
+
 6. **Violação de política** — laboratório com menos de 24h de antecedência recebe `422` (RN-09)
+
+   ![Passo 6 — POST /bookings em LAB-01 para o dia seguinte responde 422 PolicyViolation](imagens/passo-06-politica-422.png)
+
 7. **Autorização** — `REQUESTER` tentando aprovar recebe `403` (RN-11)
-8. Aprovação pelo gestor — a reserva vai para `APPROVED`
+
+   ![Passo 7 — POST /bookings/{id}/approval como bruno-lima responde 403 PermissionDenied](imagens/passo-07-requester-403.png)
+
+8. Aprovação pelo gestor — a reserva vai para `APPROVED` (UC-05)
+
+   ![Passo 8 — POST /bookings/{id}/approval como gestora-gil responde 200 com status APPROVED](imagens/passo-08-aprovacao.png)
+
 9. **Transição inválida** — aprovar de novo recebe `409` (RN-13)
-10. `GET /notifications` — as notificações dos eventos publicados ao longo do roteiro
-11. Cancelamento e nova reserva no mesmo horário, agora aceita
+
+   ![Passo 9 — segunda aprovação da mesma reserva responde 409 InvalidStateTransition](imagens/passo-09-transicao-invalida-409.png)
+
+10. `GET /notifications` — as notificações dos eventos publicados ao longo do roteiro (Observer)
+
+    ![Passo 10 — GET /notifications lista as duas solicitações e a aprovação](imagens/passo-10-notifications.png)
+
+11. Cancelamento e nova reserva no mesmo horário, agora aceita (UC-07, RN-01)
+
+    ![Passo 11a — POST /bookings/{id}/cancellation de ana-souza responde 200 com status CANCELLED](imagens/passo-11a-cancelamento.png)
+
+    ![Passo 11b — POST /bookings de bruno-lima no horário liberado responde 201 APPROVED](imagens/passo-11b-nova-reserva.png)
 
 Cada passo evidencia uma regra numerada da [especificação](ESPECIFICACAO.md#5-regras-de-negócio).
 
@@ -335,7 +677,55 @@ O raciocínio por trás dessa escolha: se uma regra de negócio só pode ser tes
 servidor HTTP, ela não está desacoplada deles. A dificuldade de testar é o sintoma; o acoplamento é a
 doença. A suíte não é apenas rede de segurança — é a evidência da qualidade avaliada.
 
-> A PREENCHER: saída de `pytest -v` e relatório de cobertura.
+Resumo de `pytest` na raiz — a suíte completa, nos quatro níveis:
+
+```text
+$ pytest
+........................................................................ [ 10%]
+........................................................................ [ 21%]
+........................................................................ [ 32%]
+........................................................................ [ 42%]
+........................................................................ [ 53%]
+........................................................................ [ 64%]
+........................................................................ [ 75%]
+........................................................................ [ 85%]
+........................................................................ [ 96%]
+.......................                                                  [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/luizg/FinalProjectAS/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+671 passed, 1 warning in 1.78s
+```
+
+O único aviso vem de uma depreciação interna do FastAPI, não do código do projeto. A saída verbosa
+caso a caso é longa demais para reproduzir aqui — são 671 linhas de `PASSED`; as três seções de
+evidência ([§5](#5-design-pattern-1--strategy), [§6](#6-design-pattern-2--state) e
+[§8](#8-princípios-de-projeto-as-evidências)) trazem `pytest -v` integral dos recortes que
+sustentam cada padrão. Para reproduzir a suíte inteira em modo verboso:
+`pytest -v -o addopts=""`.
+
+Relatório de cobertura — `pytest --cov --cov-report=term-missing`:
+
+```text
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.13-final-0 _______________
+
+Name    Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------
+TOTAL     949      0     68      0   100%
+
+53 files skipped due to complete coverage.
+671 passed, 1 warning in 3.23s
+```
+
+A meta do [ADR-0009](ADRs/0009-estrategia-de-testes.md) era cobertura ≥ 85% em `domain/` e
+`application/` como indicador. O resultado é **100% de linhas e de ramos em todo o
+`src/agendalab/`** — as duas camadas da meta incluídas; a configuração `skip_covered` omite da
+tabela os 53 arquivos integralmente cobertos, e a coluna `Missing` fica vazia porque não há linha
+descoberta a listar.
 
 ## 11. Trade-offs assumidos e o que ficou fora
 
@@ -412,16 +802,3 @@ respeitada.
 | [0009](ADRs/0009-estrategia-de-testes.md) | Adotar TDD com pirâmide de testes e teste de arquitetura |
 
 Visão das dependências entre as decisões: [índice dos ADRs](ADRs/README.md#como-as-decisões-se-sustentam).
-
----
-
-## Checklist de preenchimento antes da entrega
-
-- [x] URL do repositório na capa
-- [ ] §2 — comandos verificados de ponta a ponta, com saída real
-- [ ] §5, §6, §7 — trechos de código reais, com caminho de arquivo e linha
-- [ ] §5, §6, §8 — saída dos testes de políticas, estados e arquitetura
-- [ ] §9 — capturas de tela dos 11 passos, salvas em `docs/imagens/`
-- [ ] §10 — saída de `pytest -v` e relatório de cobertura
-- [ ] Remover o aviso "ESTADO DESTE DOCUMENTO" do topo
-- [ ] Remover este checklist
